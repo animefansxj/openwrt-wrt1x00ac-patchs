@@ -17,6 +17,8 @@
     [3] 5GHZ_NAS_BrokenFix.patch
         修正系统保留内存过少导致5GHZ读写NAS时中断的
         问题。
+    [4] luci_processes_status_Fix.patch
+        修正luci状态页面不显示系统进程的问题
 
 
 测试环境:

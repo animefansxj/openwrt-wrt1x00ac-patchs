@@ -1,0 +1,11 @@
+--- feeds/luci/modules/luci-base/luasrc/sys.lua	2016-01-01 16:41:00.000000000 +0800
++++ /home/xujun/sys.lua	2016-06-05 13:20:17.000000000 +0800
+@@ -504,7 +504,7 @@
+ 
+ 	for line in ps do
+ 		local pid, ppid, user, stat, vsz, mem, cpu, cmd = line:match(
+-			"^ *(%d+) +(%d+) +(%S.-%S) +([RSDZTW][W ][<N ]) +(%d+) +(%d+%%) +(%d+%%) +(.+)"
++			"^ *(%d+) +(%d+) +(%w+) +([%u<]+) +(%d+) +(%d+%.%d+) +%d+ +(%d+%.%d+) +(.+)"
+ 		)
+ 
+ 		local idx = tonumber(pid)
