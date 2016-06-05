@@ -8,10 +8,15 @@
     来。打补丁时从OpenWrt源码的根目录开始打即可。
 
 文件概述:
-    [1] luci_marvell_switch.patch - 针对marvell交
-            换机在luci的交换机页面添加端口状态显示。
-    [2] openwrt_marvell_switch.patch - 修改OpenWrt
-            的默认设置以在luci中显示交换机页面。
+    [1] luci_marvell_switch.patch
+        针对marvell交换机在luci的交换机页面添加端口
+        状态显示。
+    [2] openwrt_marvell_switch.patch
+        修改OpenWrt的默认设置以在luci中显示交换机页
+        面。
+    [3] 5GHZ_NAS_BrokenFix.patch
+        修正系统保留内存过少导致5GHZ读写NAS时中断的
+        问题。
 
 
 测试环境:
