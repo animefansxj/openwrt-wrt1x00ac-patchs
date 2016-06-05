@@ -8,8 +8,8 @@
     来。打补丁时从OpenWrt源码的根目录开始打即可。
 
 文件概述:
-    [1] lucimarvell_switch.patch - 针对marvell交换
-            机在luci的交换机页面添加端口状态显示。
+    [1] luci_marvell_switch.patch - 针对marvell交
+            换机在luci的交换机页面添加端口状态显示。
     [2] openwrt_marvell_switch.patch - 修改OpenWrt
             的默认设置以在luci中显示交换机页面。
 
