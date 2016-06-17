@@ -32,4 +32,4 @@
 +net.bridge.bridge-nf-call-iptables=0
 +
 +# for wrt1x00ac
-+vm.min_free_kbytes=24576
++vm.min_free_kbytes=16384
