@@ -1,5 +1,5 @@
 --- target/linux/mvebu/base-files/etc/uci-defaults/02_network	2016-04-17 11:29:39.000000000 +0800
-+++ "/home/xujun/Router/wrt1200ac/chaos_calmer.1/target/linux/mvebu/base-files/etc/uci-defaults/02_network"	2016-05-09 22:08:26.071472307 +0800
++++ target/linux/mvebu/base-files/etc/uci-defaults/02_network	2016-05-09 22:08:26.071472307 +0800
 @@ -17,6 +17,9 @@
  case "$board" in
  armada-385-linksys-caiman)
