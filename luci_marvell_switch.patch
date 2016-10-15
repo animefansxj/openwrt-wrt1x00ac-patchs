@@ -1,5 +1,5 @@
 --- feeds/luci/modules/luci-base/luasrc/tools/status.lua	2016-01-01 16:41:00.000000000 +0800
-+++ "/home/xujun/status.lua"	2016-06-05 10:10:54.557855800 +0800
++++ feeds/luci/modules/luci-base/luasrc/tools/status.lua	2016-06-05 10:10:54.557855800 +0800
 @@ -1,4 +1,5 @@
  -- Copyright 2011 Jo-Philipp Wich <jow@openwrt.org>
 +-- Marvell switch status reads by animefans_xj <af_xj@hotmail.com>
