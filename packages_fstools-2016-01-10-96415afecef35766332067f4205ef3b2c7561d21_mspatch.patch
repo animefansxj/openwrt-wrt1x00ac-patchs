@@ -1,0 +1,591 @@
+diff -ruN fstools-2016-01-10.org/block.c fstools-2016-01-10/block.c
+--- fstools-2016-01-10.org/block.c	2016-04-17 12:16:28.000000000 +0800
++++ fstools-2016-01-10/block.c	2016-04-17 19:47:58.823457854 +0800
+@@ -732,8 +732,26 @@
+ 		if (check_fs)
+ 			check_filesystem(pr);
+ 
+-		err = mount(pr->dev, target, pr->id->name, m->flags,
++	if (!strncmp(pr->id->name,"ntfs-3g",7))
++		{
++		  printf("Mounting NTFS Volume using ntfs-3g\nexec mount -t %s %s %s\n",pr->id->name, pr->dev, target);
++		    char ntfs_mount_cmd[128];
++		    memset(ntfs_mount_cmd, 0, sizeof(ntfs_mount_cmd));
++		    
++		    err = snprintf(ntfs_mount_cmd, sizeof(ntfs_mount_cmd),
++			    "mount -t %s %s %s",
++			    pr->id->name, pr->dev, target);
++		    if (err < sizeof(ntfs_mount_cmd) && err > 0)
++			    err = system(ntfs_mount_cmd);
++		  //err = mount(pr->dev, target, pr->id->name, 0, 0);
++
++		}
++		else
++		{
++		    err = mount(pr->dev, target, pr->id->name, m->flags,
+ 		            (m->options) ? (m->options) : (""));
++		}
++
+ 		if (err)
+ 			ULOG_ERR("mounting %s (%s) as %s failed (%d) - %s\n",
+ 			         pr->dev, pr->id->name, target, err, strerror(err));
+diff -ruN fstools-2016-01-10.org/CMakeLists.txt fstools-2016-01-10/CMakeLists.txt
+--- fstools-2016-01-10.org/CMakeLists.txt	2016-04-17 12:16:28.000000000 +0800
++++ fstools-2016-01-10/CMakeLists.txt	2016-04-17 19:44:10.875457122 +0800
+@@ -22,6 +22,8 @@
+ 		libblkid-tiny/mkdev.c
+ 		libblkid-tiny/ext.c
+ 		libblkid-tiny/jffs2.c
++		libblkid-tiny/ntfs.c
++		libblkid-tiny/exfat.c
+ 		libblkid-tiny/vfat.c
+ 		libblkid-tiny/hfs.c
+ 		libblkid-tiny/swap.c
+diff -ruN fstools-2016-01-10.org/.directory fstools-2016-01-10/.directory
+--- fstools-2016-01-10.org/.directory	1970-01-01 08:00:00.000000000 +0800
++++ fstools-2016-01-10/.directory	2016-04-17 20:34:21.355466792 +0800
+@@ -0,0 +1,4 @@
++[Dolphin]
++Timestamp=2016,4,17,20,34,21
++Version=3
++ViewMode=1
+diff -ruN fstools-2016-01-10.org/libblkid-tiny/blkidP.h fstools-2016-01-10/libblkid-tiny/blkidP.h
+--- fstools-2016-01-10.org/libblkid-tiny/blkidP.h	2016-04-17 12:16:28.000000000 +0800
++++ fstools-2016-01-10/libblkid-tiny/blkidP.h	2016-04-17 20:32:46.051466486 +0800
+@@ -124,6 +124,19 @@
+ /*
+  * Low-level probe result
+  */
++//Added begin
++#define BLKID_PROBVAL_BUFSIZ	64
++
++#define BLKID_NVALS_SUBLKS	14
++#define BLKID_NVALS_TOPLGY	5
++#define BLKID_NVALS_PARTS	13
++
++/* Max number of all values in probing result */
++#define BLKID_NVALS             (BLKID_NVALS_SUBLKS + \
++				 BLKID_NVALS_TOPLGY + \
++				 BLKID_NVALS_PARTS)
++//Added end
++
+ struct blkid_prval
+ {
+ 	const char	*name;		/* value name */
+@@ -446,6 +459,10 @@
+ 			__attribute__((nonnull))
+ 			__attribute__((warn_unused_result));
+ 
++// Added begin
++extern int blkid_probe_reset_last_value(blkid_probe pr);
++//Added end
++
+ extern void blkid_probe_free_value(struct blkid_prval *v);
+ 
+ 
+diff -ruN fstools-2016-01-10.org/libblkid-tiny/.directory fstools-2016-01-10/libblkid-tiny/.directory
+--- fstools-2016-01-10.org/libblkid-tiny/.directory	1970-01-01 08:00:00.000000000 +0800
++++ fstools-2016-01-10/libblkid-tiny/.directory	2016-04-17 20:31:32.223466249 +0800
+@@ -0,0 +1,6 @@
++[Dolphin]
++SortOrder=1
++SortRole=date
++Timestamp=2016,4,17,20,31,32
++Version=3
++ViewMode=1
+diff -ruN fstools-2016-01-10.org/libblkid-tiny/exfat.c fstools-2016-01-10/libblkid-tiny/exfat.c
+--- fstools-2016-01-10.org/libblkid-tiny/exfat.c	1970-01-01 08:00:00.000000000 +0800
++++ fstools-2016-01-10/libblkid-tiny/exfat.c	2016-01-11 00:12:08.000000000 +0800
+@@ -0,0 +1,149 @@
++/*
++ * Copyright (C) 2010 Andrew Nayenko <resver@gmail.com>
++ *
++ * This file may be redistributed under the terms of the
++ * GNU Lesser General Public License.
++ */
++#include "superblocks.h"
++
++struct exfat_super_block {
++	uint8_t jump[3];
++	uint8_t oem_name[8];
++	uint8_t	__unused1[53];
++	uint64_t block_start;
++	uint64_t block_count;
++	uint32_t fat_block_start;
++	uint32_t fat_block_count;
++	uint32_t cluster_block_start;
++	uint32_t cluster_count;
++	uint32_t rootdir_cluster;
++	uint8_t volume_serial[4];
++	struct {
++		uint8_t minor;
++		uint8_t major;
++	} version;
++	uint16_t volume_state;
++	uint8_t block_bits;
++	uint8_t bpc_bits;
++	uint8_t fat_count;
++	uint8_t drive_no;
++	uint8_t allocated_percent;
++} __attribute__((__packed__));
++
++struct exfat_entry_label {
++	uint8_t type;
++	uint8_t length;
++	uint8_t name[30];
++} __attribute__((__packed__));
++
++#define BLOCK_SIZE(sb) (1 << (sb)->block_bits)
++#define CLUSTER_SIZE(sb) (BLOCK_SIZE(sb) << (sb)->bpc_bits)
++#define EXFAT_FIRST_DATA_CLUSTER 2
++#define EXFAT_LAST_DATA_CLUSTER 0xffffff6
++#define EXFAT_ENTRY_SIZE 32
++
++#define EXFAT_ENTRY_EOD		0x00
++#define EXFAT_ENTRY_LABEL	0x83
++
++static blkid_loff_t block_to_offset(const struct exfat_super_block *sb,
++		blkid_loff_t block)
++{
++	return (blkid_loff_t) block << sb->block_bits;
++}
++
++static blkid_loff_t cluster_to_block(const struct exfat_super_block *sb,
++		uint32_t cluster)
++{
++	return le32_to_cpu(sb->cluster_block_start) +
++			((blkid_loff_t) (cluster - EXFAT_FIRST_DATA_CLUSTER)
++					<< sb->bpc_bits);
++}
++
++static blkid_loff_t cluster_to_offset(const struct exfat_super_block *sb,
++		uint32_t cluster)
++{
++	return block_to_offset(sb, cluster_to_block(sb, cluster));
++}
++
++static uint32_t next_cluster(blkid_probe pr,
++		const struct exfat_super_block *sb, uint32_t cluster)
++{
++	uint32_t *next;
++	blkid_loff_t fat_offset;
++
++	fat_offset = block_to_offset(sb, le32_to_cpu(sb->fat_block_start))
++		+ (blkid_loff_t) cluster * sizeof(cluster);
++	next = (uint32_t *) blkid_probe_get_buffer(pr, fat_offset,
++			sizeof(uint32_t));
++	if (!next)
++		return 0;
++	return le32_to_cpu(*next);
++}
++
++static struct exfat_entry_label *find_label(blkid_probe pr,
++		const struct exfat_super_block *sb)
++{
++	uint32_t cluster = le32_to_cpu(sb->rootdir_cluster);
++	blkid_loff_t offset = cluster_to_offset(sb, cluster);
++	uint8_t *entry;
++
++	for (;;) {
++		entry = (uint8_t *) blkid_probe_get_buffer(pr, offset,
++				EXFAT_ENTRY_SIZE);
++		if (!entry)
++			return NULL;
++		if (entry[0] == EXFAT_ENTRY_EOD)
++			return NULL;
++		if (entry[0] == EXFAT_ENTRY_LABEL)
++			return (struct exfat_entry_label *) entry;
++		offset += EXFAT_ENTRY_SIZE;
++		if (offset % CLUSTER_SIZE(sb) == 0) {
++			cluster = next_cluster(pr, sb, cluster);
++			if (cluster < EXFAT_FIRST_DATA_CLUSTER)
++				return NULL;
++			if (cluster > EXFAT_LAST_DATA_CLUSTER)
++				return NULL;
++			offset = cluster_to_offset(sb, cluster);
++		}
++	}
++}
++
++static int probe_exfat(blkid_probe pr, const struct blkid_idmag *mag)
++{
++	struct exfat_super_block *sb;
++	struct exfat_super_block sb_local;
++	struct exfat_entry_label *label;
++	
++	sb = blkid_probe_get_sb(pr, mag, struct exfat_super_block);
++	if (!sb)
++		return -1;
++	memcpy(&sb_local, sb, sizeof(struct exfat_super_block));
++	sb = &sb_local;
++	
++	label = find_label(pr, sb);
++	if (label)
++		blkid_probe_set_utf8label(pr, label->name,
++				min(label->length * 2, 30), BLKID_ENC_UTF16LE);
++
++	blkid_probe_sprintf_uuid(pr, sb->volume_serial, 4,
++			"%02hhX%02hhX-%02hhX%02hhX",
++			sb->volume_serial[3], sb->volume_serial[2],
++			sb->volume_serial[1], sb->volume_serial[0]);
++
++	blkid_probe_sprintf_version(pr, "%hu.%hu",
++			sb->version.major, sb->version.minor);
++
++	return 0;
++}
++
++const struct blkid_idinfo exfat_idinfo =
++{
++	.name		= "exfat",
++	.usage		= BLKID_USAGE_FILESYSTEM,
++	.probefunc	= probe_exfat,
++	.magics		=
++	{
++		{ .magic = "EXFAT   ", .len = 8, .sboff = 3 },
++		{ NULL }
++	}
++};
+diff -ruN fstools-2016-01-10.org/libblkid-tiny/libblkid-tiny.c fstools-2016-01-10/libblkid-tiny/libblkid-tiny.c
+--- fstools-2016-01-10.org/libblkid-tiny/libblkid-tiny.c	2016-04-17 12:16:28.000000000 +0800
++++ fstools-2016-01-10/libblkid-tiny/libblkid-tiny.c	2016-04-17 20:17:23.427463522 +0800
+@@ -5,6 +5,10 @@
+ #include "superblocks.h"
+ #include "linux_version.h"
+ 
++// BEGIN Added
++#include <ctype.h>
++// END Added
++
+ #if 0
+ #define DEBUG(fmt, ...)	printf(fmt, __VA_ARGS__)
+ #else
+@@ -170,6 +174,8 @@
+ 	&hfs_idinfo,
+ 	&btrfs_idinfo,
+ 	&f2fs_idinfo,
++	&ntfs_idinfo,
++	&exfat_idinfo,
+ };
+ 
+ int probe_block(char *block, struct blkid_struct_probe *pr)
+@@ -222,3 +228,120 @@
+ 
+ 	return 0;
+ }
++
++
++// added
++
++int blkid_probe_set_utf8label(blkid_probe pr, unsigned char *label,
++				size_t len, int enc)
++{
++	struct blkid_chain *chn = blkid_probe_get_chain(pr);
++	struct blkid_prval *v;
++
++	if ((chn->flags & BLKID_SUBLKS_LABELRAW) &&
++	    blkid_probe_set_value(pr, "LABEL_RAW", label, len) < 0)
++		return -1;
++	if (!(chn->flags & BLKID_SUBLKS_LABEL))
++		return 0;
++	v = blkid_probe_assign_value(pr, "LABEL");
++	if (!v)
++		return -1;
++
++	blkid_encode_to_utf8(enc, v->data, sizeof(v->data), label, len);
++	v->len = blkid_rtrim_whitespace(v->data) + 1;
++	if (v->len == 1)
++		blkid_probe_reset_last_value(pr);
++	return 0;
++}
++
++int blkid_probe_reset_last_value(blkid_probe pr)
++{
++	struct blkid_prval *v;
++
++	if (pr == NULL || pr->nvals == 0)
++		return -1;
++
++	v = &pr->vals[pr->nvals - 1];
++
++	DBG(DEBUG_LOWPROBE,
++		printf("un-assigning %s [%s]\n", v->name, v->chain->driver->name));
++
++	memset(v, 0, sizeof(struct blkid_prval));
++	pr->nvals--;
++
++	return 0;
++
++}
++
++struct blkid_chain *blkid_probe_get_chain(blkid_probe pr)
++{
++	return pr->cur_chain;
++}
++
++struct blkid_prval *blkid_probe_assign_value(
++			blkid_probe pr, const char *name)
++{
++	struct blkid_prval *v;
++
++	if (!name)
++		return NULL;
++	if (pr->nvals >= BLKID_NVALS)
++		return NULL;
++
++	v = &pr->vals[pr->nvals];
++	v->name = name;
++	v->chain = pr->cur_chain;
++	pr->nvals++;
++
++	DBG(DEBUG_LOWPROBE,
++		printf("assigning %s [%s]\n", name, v->chain->driver->name));
++	return v;
++}
++
++size_t blkid_rtrim_whitespace(unsigned char *str)
++{
++	size_t i = strlen((char *) str);
++
++	while (i--) {
++		if (!isspace(str[i]))
++			break;
++	}
++	str[++i] = '\0';
++	return i;
++}
++
++size_t blkid_encode_to_utf8(int enc, unsigned char *dest, size_t len,
++			const unsigned char *src, size_t count)
++{
++	size_t i, j;
++	uint16_t c;
++
++	for (j = i = 0; i + 2 <= count; i += 2) {
++		if (enc == BLKID_ENC_UTF16LE)
++			c = (src[i+1] << 8) | src[i];
++		else /* BLKID_ENC_UTF16BE */
++			c = (src[i] << 8) | src[i+1];
++		if (c == 0) {
++			dest[j] = '\0';
++			break;
++		} else if (c < 0x80) {
++			if (j+1 >= len)
++				break;
++			dest[j++] = (uint8_t) c;
++		} else if (c < 0x800) {
++			if (j+2 >= len)
++				break;
++			dest[j++] = (uint8_t) (0xc0 | (c >> 6));
++			dest[j++] = (uint8_t) (0x80 | (c & 0x3f));
++		} else {
++			if (j+3 >= len)
++				break;
++			dest[j++] = (uint8_t) (0xe0 | (c >> 12));
++			dest[j++] = (uint8_t) (0x80 | ((c >> 6) & 0x3f));
++			dest[j++] = (uint8_t) (0x80 | (c & 0x3f));
++		}
++	}
++	dest[j] = '\0';
++	return j;
++}
++
+diff -ruN fstools-2016-01-10.org/libblkid-tiny/libblkid-tiny.h fstools-2016-01-10/libblkid-tiny/libblkid-tiny.h
+--- fstools-2016-01-10.org/libblkid-tiny/libblkid-tiny.h	2016-04-17 12:16:28.000000000 +0800
++++ fstools-2016-01-10/libblkid-tiny/libblkid-tiny.h	2016-04-17 19:43:26.279456979 +0800
+@@ -51,9 +51,16 @@
+ {
+ 	const struct blkid_idinfo	*id;
+ 	struct list_head		list;
++	// BEGIN Added
++	struct blkid_prval	*vals;
++	struct blkid_chain	*cur_chain;
++	// END Added
+ 
+ 	int	fd;
+ 	int	err;
++	// BEGIN Added
++	int   nvals;
++	// END Added
+ 	char	dev[32];
+ 	char	uuid[64];
+ 	char	label[64];
+diff -ruN fstools-2016-01-10.org/libblkid-tiny/ntfs.c fstools-2016-01-10/libblkid-tiny/ntfs.c
+--- fstools-2016-01-10.org/libblkid-tiny/ntfs.c	1970-01-01 08:00:00.000000000 +0800
++++ fstools-2016-01-10/libblkid-tiny/ntfs.c	2016-01-10 13:37:38.000000000 +0800
+@@ -0,0 +1,175 @@
++/*
++ * Copyright (C) 2004 Kay Sievers <kay.sievers@vrfy.org>
++ * Copyright (C) 2008 Karel Zak <kzak@redhat.com>
++ *
++ * This file may be redistributed under the terms of the
++ * GNU Lesser General Public License.
++ */
++#include <stdio.h>
++#include <stdlib.h>
++#include <unistd.h>
++#include <string.h>
++#include <inttypes.h>
++
++#include "superblocks.h"
++
++struct ntfs_super_block {
++	uint8_t		jump[3];
++	uint8_t		oem_id[8];
++	uint8_t		bios_parameter_block[25];
++	uint16_t	unused[2];
++	uint64_t	number_of_sectors;
++	uint64_t	mft_cluster_location;
++	uint64_t	mft_mirror_cluster_location;
++	int8_t		cluster_per_mft_record;
++	uint8_t		reserved1[3];
++	int8_t		cluster_per_index_record;
++	uint8_t		reserved2[3];
++	uint64_t	volume_serial;
++	uint16_t	checksum;
++} __attribute__((packed));
++
++struct master_file_table_record {
++	uint32_t	magic;
++	uint16_t	usa_ofs;
++	uint16_t	usa_count;
++	uint64_t	lsn;
++	uint16_t	sequence_number;
++	uint16_t	link_count;
++	uint16_t	attrs_offset;
++	uint16_t	flags;
++	uint32_t	bytes_in_use;
++	uint32_t	bytes_allocated;
++} __attribute__((__packed__));
++
++struct file_attribute {
++	uint32_t	type;
++	uint32_t	len;
++	uint8_t		non_resident;
++	uint8_t		name_len;
++	uint16_t	name_offset;
++	uint16_t	flags;
++	uint16_t	instance;
++	uint32_t	value_len;
++	uint16_t	value_offset;
++} __attribute__((__packed__));
++
++#define MFT_RECORD_VOLUME			3
++#define MFT_RECORD_ATTR_VOLUME_NAME		0x60
++#define MFT_RECORD_ATTR_VOLUME_INFO		0x70
++#define MFT_RECORD_ATTR_OBJECT_ID		0x40
++#define MFT_RECORD_ATTR_END			0xffffffffu
++
++static int probe_ntfs(blkid_probe pr, const struct blkid_idmag *mag)
++{
++	struct ntfs_super_block *ns;
++	struct ntfs_super_block ns_local;
++	struct master_file_table_record *mft;
++	struct file_attribute *attr;
++	int		bytes_per_sector, sectors_per_cluster;
++	int		mft_record_size, attr_off, attr_len;
++	unsigned int	attr_type, val_len;
++	int		val_off;
++	uint64_t		nr_clusters;
++	blkid_loff_t off;
++	unsigned char *buf_mft, *val;
++
++	ns = blkid_probe_get_sb(pr, mag, struct ntfs_super_block);
++	if (!ns)
++		return -1;
++	memcpy(&ns_local, ns, sizeof(struct ntfs_super_block));
++	ns = &ns_local;
++
++	bytes_per_sector = ns->bios_parameter_block[0] +
++		(ns->bios_parameter_block[1]  << 8);
++	sectors_per_cluster = ns->bios_parameter_block[2];
++
++	if ((bytes_per_sector < 512) || (sectors_per_cluster == 0))
++		return 1;
++
++	if (ns->cluster_per_mft_record < 0)
++		mft_record_size = 1 << (0 - ns->cluster_per_mft_record);
++	else
++		mft_record_size = ns->cluster_per_mft_record *
++			sectors_per_cluster * bytes_per_sector;
++	nr_clusters = le64_to_cpu(ns->number_of_sectors) / sectors_per_cluster;
++
++	if ((le64_to_cpu(ns->mft_cluster_location) > nr_clusters) ||
++	    (le64_to_cpu(ns->mft_mirror_cluster_location) > nr_clusters))
++		return 1;
++
++	off = le64_to_cpu(ns->mft_mirror_cluster_location) *
++		bytes_per_sector * sectors_per_cluster;
++
++	buf_mft = blkid_probe_get_buffer(pr, off, mft_record_size);
++	if (!buf_mft)
++		return 1;
++
++	if (memcmp(buf_mft, "FILE", 4))
++		return 1;
++
++	off = le64_to_cpu(ns->mft_cluster_location) * bytes_per_sector *
++		sectors_per_cluster;
++
++	buf_mft = blkid_probe_get_buffer(pr, off, mft_record_size);
++	if (!buf_mft)
++		return 1;
++
++	if (memcmp(buf_mft, "FILE", 4))
++		return 1;
++
++	off += MFT_RECORD_VOLUME * mft_record_size;
++
++	buf_mft = blkid_probe_get_buffer(pr, off, mft_record_size);
++	if (!buf_mft)
++		return 1;
++
++	if (memcmp(buf_mft, "FILE", 4))
++		return 1;
++
++	mft = (struct master_file_table_record *) buf_mft;
++
++	attr_off = le16_to_cpu(mft->attrs_offset);
++
++	while (1) {
++		attr = (struct file_attribute *) (buf_mft + attr_off);
++		attr_len = le32_to_cpu(attr->len);
++		attr_type = le32_to_cpu(attr->type);
++		val_off = le16_to_cpu(attr->value_offset);
++		val_len = le32_to_cpu(attr->value_len);
++
++		attr_off += attr_len;
++
++		if ((attr_off > mft_record_size) ||
++		    (attr_len == 0))
++			break;
++
++		if (attr_type == MFT_RECORD_ATTR_END)
++			break;
++
++		if (attr_type == MFT_RECORD_ATTR_VOLUME_NAME) {
++			val = ((uint8_t *) attr) + val_off;
++			blkid_probe_set_utf8label(pr, val, val_len, BLKID_ENC_UTF16LE);
++		}
++	}
++
++	blkid_probe_sprintf_uuid(pr,
++			(unsigned char *) &ns->volume_serial,
++			sizeof(ns->volume_serial),
++			"%016" PRIX64, le64_to_cpu(ns->volume_serial));
++	return 0;
++}
++
++
++const struct blkid_idinfo ntfs_idinfo =
++{
++	.name		= "ntfs-3g",
++	.usage		= BLKID_USAGE_FILESYSTEM,
++	.probefunc	= probe_ntfs,
++	.magics		=
++	{
++		{ .magic = "NTFS    ", .len = 8, .sboff = 3 },
++		{ NULL }
++	}
++};
++

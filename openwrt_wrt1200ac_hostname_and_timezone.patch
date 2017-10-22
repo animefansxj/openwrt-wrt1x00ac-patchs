@@ -1,0 +1,13 @@
+--- package/base-files/files/etc/config/system	2017-10-16 21:21:54.986341846 +0800
++++ package/base-files/files/etc/config/system	2016-09-11 21:31:35.208614172 +0800
+@@ -1,6 +1,8 @@
+ config system
+-	option hostname	OpenWrt
+-	option timezone	UTC
++	option hostname	WRT1200AC
++	option zonename	Asia/Shanghai
++	option timezone CST-8
++	option conloglevel 7
+ 
+ config timeserver ntp
+ 	list server	0.openwrt.pool.ntp.org

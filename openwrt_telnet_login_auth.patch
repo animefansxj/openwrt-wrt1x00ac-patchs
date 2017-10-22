@@ -1,0 +1,20 @@
+--- package/base-files/files/bin/login.sh	2017-10-16 21:21:54.962324064 +0800
++++ package/base-files/files/bin/login.sh	2016-04-17 11:29:43.000000000 +0800
+@@ -5,12 +5,14 @@ if ( ! grep -qsE '^root:[!x]?:' /etc/sha
+      ! grep -qsE '^root:[!x]?:' /etc/passwd ) && \
+    [ -z "$FAILSAFE" ]
+ then
+-	echo "Login failed."
+-	exit 0
++	echo "OpenWRT Based Router System"
++	echo "======================================"
++	exec /bin/login
+ else
+ cat << EOF
+  === IMPORTANT ============================
+-  Use 'passwd' to set your login password!
++  Use 'passwd' to set your login password
++  this will disable telnet and enable SSH
+  ------------------------------------------
+ EOF
+ fi

@@ -1,0 +1,54 @@
+--- package/utils/busybox/files/telnet	2017-10-22 10:11:51.023463844 +0800
++++ package/utils/busybox/files/telnet	2016-04-17 11:29:43.000000000 +0800
+@@ -0,0 +1,38 @@
++#!/bin/sh /etc/rc.common
++# Copyright (C) 2006-2011 OpenWrt.org
++
++START=50
++
++USE_PROCD=1
++PROG=/usr/sbin/telnetd
++
++has_root_pwd() {
++	local pwd=$([ -f "$1" ] && cat "$1")
++	      pwd="${pwd#*root:}"
++	      pwd="${pwd%%:*}"
++
++	test -n "${pwd#[\!x]}"
++}
++
++get_root_home() {
++	local homedir=$([ -f "$1" ] && cat "$1")
++	homedir="${homedir#*:*:0:0:*:}"
++
++	echo "${homedir%%:*}"
++}
++
++has_ssh_pubkey() {
++	( /etc/init.d/dropbear enabled 2> /dev/null && grep -qs "^ssh-" /etc/dropbear/authorized_keys ) || \
++	( /etc/init.d/sshd enabled 2> /dev/null && grep -qs "^ssh-" "$(get_root_home /etc/passwd)"/.ssh/authorized_keys )
++}
++
++start_service() {
++#	if ( ! has_ssh_pubkey && \
++#	     ! has_root_pwd /etc/passwd && ! has_root_pwd /etc/shadow ) || \
++#	   ( ! /etc/init.d/dropbear enabled 2> /dev/null && ! /etc/init.d/sshd enabled 2> /dev/null );
++#	then
++		procd_open_instance
++		procd_set_param command "$PROG" -F -l /bin/login.sh
++		procd_close_instance
++#	fi
++}
+
+--- package/utils/busybox/Makefile	2017-10-16 21:21:55.202493998 +0800
++++ package/utils/busybox/Makefile	2016-01-01 16:30:13.000000000 +0800
+@@ -110,6 +110,7 @@ define Package/busybox/install
+ 	$(INSTALL_DIR) $(1)/etc/init.d
+ 	$(CP) $(PKG_INSTALL_DIR)/* $(1)/
+ 	$(INSTALL_BIN) ./files/cron $(1)/etc/init.d/cron
++	$(INSTALL_BIN) ./files/telnet $(1)/etc/init.d/telnet
+ 	$(INSTALL_BIN) ./files/sysntpd $(1)/etc/init.d/sysntpd
+ 	$(INSTALL_BIN) ./files/ntpd-hotplug $(1)/usr/sbin/ntpd-hotplug
+ 	-rm -rf $(1)/lib64
+
+

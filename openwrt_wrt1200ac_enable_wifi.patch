@@ -1,0 +1,18 @@
+--- package/kernel/mac80211/files/lib/wifi/mac80211.sh	2017-10-16 21:21:55.162465941 +0800
++++ package/kernel/mac80211/files/lib/wifi/mac80211.sh	2016-09-11 21:32:53.485055790 +0800
+@@ -115,13 +115,13 @@ config wifi-device  radio$devidx
+ $dev_id
+ $ht_capab
+ 	# REMOVE THIS LINE TO ENABLE WIFI:
+-	option disabled 1
++	option disabled 0
+ 
+ config wifi-iface
+ 	option device   radio$devidx
+ 	option network  lan
+ 	option mode     ap
+-	option ssid     OpenWrt
++	option ssid     WRT1200AC
+ 	option encryption none
+ 
+ EOF

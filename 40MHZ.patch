@@ -1,0 +1,52 @@
+--- feeds/luci/modules/luci-base/po/zh-cn/base.po	2016-01-10 15:50:28.000000000 +0800
++++ feeds/luci/modules/luci-base/po/zh-cn/base.po	2016-05-13 20:12:15.250875884 +0800
+@@ -3144,6 +3144,14 @@
+ msgid "« Back"
+ msgstr "« 后退"
+ 
++msgid ""
++"Always use 40MHz channels even if the secondary channel overlaps. Using "
++"this option does not comply with IEEE 802.11n-2009!"
++msgstr "强制启用40MHz频宽并忽略辅助信道重叠。此选项不兼容IEEE 802.11n-2009!"
++
++msgid "Force 40MHz mode"
++msgstr "强制40MHz频宽"
++
+ #~ msgid "CPU frequency"
+ #~ msgstr "CPU 频率"
+ 
+@@ -3153,20 +3161,12 @@
+ #~ msgid "Ignore Hosts files"
+ #~ msgstr "忽略HOSTS文件"
+ 
+-#~ msgid ""
+-#~ "Always use 40MHz channels even if the secondary channel overlaps. Using "
+-#~ "this option does not comply with IEEE 802.11n-2009!"
+-#~ msgstr "强制启用40MHz频宽并忽略辅助信道重叠。此选项不兼容IEEE 802.11n-2009!"
+-
+ #~ msgid "Cached"
+ #~ msgstr "已缓存"
+ 
+ #~ msgid "Configures this mount as overlay storage for block-extroot"
+ #~ msgstr "设置挂载为extroot"
+ 
+-#~ msgid "Force 40MHz mode"
+-#~ msgstr "强制40MHz频宽"
+-
+ #~ msgid "Frequency Hopping"
+ #~ msgstr "跳频"
+ 
+--- feeds/luci/modules/luci-mod-admin-full/luasrc/model/cbi/admin_network/wifi.lua	2016-02-10 15:30:23.000000000 +0800
++++ feeds/luci/modules/luci-mod-admin-full/luasrc/model/cbi/admin_network/wifi.lua	2016-05-13 20:15:52.906877942 +0800
+@@ -185,6 +185,11 @@
+ 		m:set(section, "channel", value[2])
+ 		m:set(section, "htmode", value[3])
+ 	end
++	
++	noscan = s:taboption("general", Flag, "noscan", translate("Force 40MHz mode"),
++				translate("Always use 40MHz channels even if the secondary channel overlaps. Using this option does not comply with IEEE 802.11n-2009!"))
++	noscan.default = noscan.disabled
++
+ end
+ 
+ ------------------- MAC80211 Device ------------------

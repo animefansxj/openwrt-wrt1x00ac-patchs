@@ -1,5 +1,5 @@
 --- feeds/luci/modules/luci-base/luasrc/sys.lua	2016-01-01 16:41:00.000000000 +0800
-+++ feeds/luci/modules/luci-base/luasrc/sys.lua	2016-06-05 13:20:17.000000000 +0800
++++ /home/xujun/sys.lua	2016-06-05 13:20:17.000000000 +0800
 @@ -504,7 +504,7 @@
  
  	for line in ps do

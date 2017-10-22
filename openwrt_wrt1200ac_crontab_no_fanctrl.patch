@@ -1,0 +1,4 @@
+--- target/linux/mvebu/base-files/etc/crontabs/root	2017-10-16 21:21:55.358603419 +0800
++++ ../chaos_calmer.old/target/linux/mvebu/base-files/etc/crontabs/root	2016-09-11 22:00:36.720445167 +0800
+@@ -1 +0,0 @@
+-*/5 * * * * /sbin/fan_ctrl.sh

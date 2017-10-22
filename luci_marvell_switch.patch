@@ -6,7 +6,7 @@
  -- Licensed to the public under the Apache License 2.0.
  
  module("luci.tools.status", package.seeall)
-@@ -182,24 +183,38 @@
+@@ -190,24 +191,38 @@
  			repeat
  				l = swc:read("*l")
  				if l then
